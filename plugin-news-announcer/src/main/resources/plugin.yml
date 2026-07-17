@@ -1,0 +1,6 @@
+name: PluginNewsAnnouncer
+version: '${project.version}'
+main: com.example.newsannouncer.PluginNewsAnnouncer
+api-version: '1.21'
+author: TonPseudo
+description: Détecte les mises à jour de plugins au démarrage et annonce les nouveautés (Discord, lobby, site web)

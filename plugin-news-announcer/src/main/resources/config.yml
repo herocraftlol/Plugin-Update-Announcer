@@ -1,0 +1,54 @@
+# ============================================
+# Plugin News Announcer - Configuration
+# ============================================
+
+# Nom affiché de ce serveur dans les annonces (ex: "Survie", "Skyblock", "Lobby")
+server-name: "Survie"
+
+# ---- Destinations ----
+discord:
+  enabled: true
+  webhook-url: "https://discord.com/api/webhooks/XXXX/YYYY"
+
+lobby:
+  enabled: true
+  # Nom du serveur BungeeCord vers lequel relayer (doit correspondre au config.yml de Bungee)
+  target-server: "lobby"
+  # Type d'affichage dans le lobby : CHAT, TITLE, ACTIONBAR
+  display-type: "CHAT"
+
+website:
+  enabled: true
+  api-url: "https://tonsite.com/api/plugin-news"
+  # Si ton API nécessite une clé (recommandé)
+  api-key: "change-moi"
+
+# ---- GitHub ----
+# Optionnel mais recommandé : un Personal Access Token (sans aucune permission particulière,
+# juste "public_repo" en lecture) fait passer la limite de requêtes de 60/h à 5000/h.
+# Génère-le sur https://github.com/settings/tokens
+github:
+  token: ""
+
+# ---- Sources de changelog par plugin ----
+# La clé DOIT correspondre exactement au "name" déclaré dans le plugin.yml du jar.
+# Pour ajouter un nouveau plugin GitHub : ajoute juste une entrée ici, rien d'autre à coder.
+plugins:
+  WorldGuard:
+    source: github
+    repo: "EngineHub/WorldGuard"
+    # Certains repos préfixent leurs tags (ex: "v1.2.3" ou "worldguard-7.0.10")
+    tag-prefix: "v"
+
+  EconomyPlus:
+    source: spigot
+    resource-id: 12345
+
+  MonPluginMaison:
+    source: manual
+    changelog-file: "plugins/MonPluginMaison/CHANGELOG.md"
+
+  # Exemple pour un plugin dont tu veux juste l'annonce d'ajout/version,
+  # sans changelog détaillé disponible :
+  # AutrePlugin:
+  #   source: none

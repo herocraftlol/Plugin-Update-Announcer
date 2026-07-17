@@ -1,0 +1,5 @@
+name: PluginNewsAnnouncerBungee
+main: com.example.newsannouncer.bungee.PluginNewsListener
+version: 1.0.0
+author: TonPseudo
+description: Réceptionne les annonces de mises à jour de plugins et les diffuse au lobby
