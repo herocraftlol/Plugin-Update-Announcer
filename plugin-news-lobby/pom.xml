@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>plugin-news-announcer</artifactId>
+    <artifactId>plugin-news-lobby</artifactId>
     <version>1.0.1</version>
     <packaging>jar</packaging>
 
@@ -26,7 +26,6 @@
             <version>1.21-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
-        <!-- Pour parser le JSON des API GitHub / Spigot -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
@@ -37,7 +36,6 @@
     <build>
         <finalName>${project.artifactId}</finalName>
         <plugins>
-            <!-- Relocate gson pour éviter les conflits avec d'autres plugins -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -50,7 +48,7 @@
                             <relocations>
                                 <relocation>
                                     <pattern>com.google.gson</pattern>
-                                    <shadedPattern>com.example.newsannouncer.libs.gson</shadedPattern>
+                                    <shadedPattern>com.example.newslobby.libs.gson</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>

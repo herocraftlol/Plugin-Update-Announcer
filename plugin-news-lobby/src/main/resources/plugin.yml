@@ -1,0 +1,11 @@
+name: PluginNewsLobby
+version: '${project.version}'
+main: com.example.newslobby.NewsLobbyMain
+api-version: '1.21'
+author: TonPseudo
+description: Affiche les nouveautés agrégées de tous les mondes au lobby (livre + ping de chat)
+
+commands:
+  nouveautes:
+    description: Réafficher les nouveautés récentes du serveur
+    aliases: [news, pluginnews]

@@ -12,10 +12,10 @@ discord:
 
 lobby:
   enabled: true
-  # Nom du serveur BungeeCord vers lequel relayer (doit correspondre au config.yml de Bungee)
+  # Nom du serveur BungeeCord "lobby" (doit correspondre au config.yml de Bungee).
+  # Le plugin PluginNewsLobby installé SUR ce serveur reçoit les données et gère
+  # le livre + le ping de chat + le suivi par joueur. Rien d'autre à configurer ici.
   target-server: "lobby"
-  # Type d'affichage dans le lobby : CHAT, TITLE, ACTIONBAR
-  display-type: "CHAT"
 
 website:
   enabled: true
@@ -24,22 +24,23 @@ website:
   api-key: "change-moi"
 
 # ---- GitHub ----
-# Optionnel mais recommandé : un Personal Access Token (sans aucune permission particulière,
-# juste "public_repo" en lecture) fait passer la limite de requêtes de 60/h à 5000/h.
-# Génère-le sur https://github.com/settings/tokens
+# Renseigne juste ton pseudo : le plugin liste TOUS tes repos publics et les associe
+# automatiquement aux plugins installés en comparant les noms. Plus besoin de rien
+# ajouter manuellement quand tu crées un nouveau repo.
 github:
-  token: ""
+  username: "TonPseudoGithub"
+  token: ""   # recommandé : Personal Access Token (scope "public_repo"), passe de 60 à 5000 req/h
+  # Format des tags utilisé par la majorité de tes repos ("v1.2.3" -> "v", "1.2.3" -> "")
+  # Sert de valeur par défaut ; le fetcher retente aussi en fuzzy-match si ça ne correspond pas.
+  default-tag-prefix: "v"
 
-# ---- Sources de changelog par plugin ----
-# La clé DOIT correspondre exactement au "name" déclaré dans le plugin.yml du jar.
-# Pour ajouter un nouveau plugin GitHub : ajoute juste une entrée ici, rien d'autre à coder.
+# ---- Overrides manuels (optionnel) ----
+# Utile seulement si :
+#  - le nom du repo GitHub ne ressemble pas du tout au nom du plugin (matching auto impossible)
+#  - le plugin vient de Spigot plutôt que GitHub
+#  - le plugin est un jar maison avec un CHANGELOG.md local
+# Si un plugin n'apparaît pas ici, la détection automatique par nom est utilisée.
 plugins:
-  WorldGuard:
-    source: github
-    repo: "EngineHub/WorldGuard"
-    # Certains repos préfixent leurs tags (ex: "v1.2.3" ou "worldguard-7.0.10")
-    tag-prefix: "v"
-
   EconomyPlus:
     source: spigot
     resource-id: 12345
@@ -48,7 +49,9 @@ plugins:
     source: manual
     changelog-file: "plugins/MonPluginMaison/CHANGELOG.md"
 
-  # Exemple pour un plugin dont tu veux juste l'annonce d'ajout/version,
-  # sans changelog détaillé disponible :
-  # AutrePlugin:
-  #   source: none
+  # Exemple d'override si le repo ne matche pas le nom du plugin :
+  # NomDuPlugin:
+  #   source: github
+  #   repo: "TonPseudoGithub/nom-de-repo-different"
+  #   tag-prefix: ""
+

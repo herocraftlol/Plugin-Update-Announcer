@@ -5,6 +5,7 @@ import com.example.newsannouncer.announce.LobbyAnnouncer;
 import com.example.newsannouncer.announce.WebsiteAnnouncer;
 import com.example.newsannouncer.changelog.ChangelogFetcher;
 import com.example.newsannouncer.changelog.GithubChangelogFetcher;
+import com.example.newsannouncer.changelog.GithubRepoResolver;
 import com.example.newsannouncer.changelog.ManualChangelogFetcher;
 import com.example.newsannouncer.changelog.SpigotChangelogFetcher;
 import org.bukkit.configuration.ConfigurationSection;
@@ -19,7 +20,9 @@ import java.util.Map;
 
 public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
 
-    private List<PluginUpdate> pendingLobbyUpdates = null;
+    private GithubRepoResolver repoResolver;
+    private List<PluginUpdate> pendingLobbyUpdates;
+    private String pendingLobbyWorldName;
     private LobbyAnnouncer lobbyAnnouncer;
 
     @Override
@@ -28,8 +31,11 @@ public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getServer().getPluginManager().registerEvents(this, this);
 
-        // Tout le travail réseau (GitHub/Spigot) se fait en asynchrone pour ne jamais
-        // bloquer le démarrage du serveur.
+        String username = getConfig().getString("github.username", "");
+        if (!username.isBlank()) {
+            repoResolver = new GithubRepoResolver(username, getConfig().getString("github.token", ""));
+        }
+
         getServer().getScheduler().runTaskAsynchronously(this, this::runDetectionCycle);
     }
 
@@ -51,7 +57,6 @@ public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
                 return;
             }
 
-            // Enrichir chaque update avec son changelog si une source est configurée
             for (PluginUpdate update : updates) {
                 if (update.type == PluginUpdate.Type.UPDATED) {
                     update.changelog = fetchChangelogSafely(update);
@@ -66,29 +71,58 @@ public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
         }
     }
 
+    /**
+     * Ordre de résolution du changelog :
+     *  1) Override manuel dans config.yml (section "plugins:") si présent
+     *  2) Sinon, matching automatique via la liste des repos GitHub de l'utilisateur configuré
+     *  3) Sinon, pas de changelog détaillé (le plugin est quand même annoncé, juste sans détail)
+     */
     private String fetchChangelogSafely(PluginUpdate update) {
-        ConfigurationSection section = getConfig().getConfigurationSection("plugins." + update.pluginName);
-        if (section == null) return null; // pas configuré, on annonce sans détail
+        ConfigurationSection override = getConfig().getConfigurationSection("plugins." + update.pluginName);
 
-        String source = section.getString("source", "none");
         try {
-            ChangelogFetcher fetcher = switch (source) {
-                case "github" -> new GithubChangelogFetcher(
-                        section.getString("repo"),
-                        section.getString("tag-prefix", ""),
-                        getConfig().getString("github.token", "")
-                );
-                case "spigot" -> new SpigotChangelogFetcher(section.getInt("resource-id"));
-                case "manual" -> new ManualChangelogFetcher(new File(section.getString("changelog-file")));
-                default -> null;
-            };
-            if (fetcher == null) return null;
-            return fetcher.fetch(update.pluginName, update.oldVersion, update.newVersion);
+            if (override != null) {
+                ChangelogFetcher fetcher = buildFetcherFromOverride(override);
+                if (fetcher != null) {
+                    return fetcher.fetch(update.pluginName, update.oldVersion, update.newVersion);
+                }
+            }
+
+            if (repoResolver != null) {
+                String repo = repoResolver.resolveRepo(update.pluginName);
+                if (repo != null) {
+                    String tagPrefix = getConfig().getString("github.default-tag-prefix", "v");
+                    ChangelogFetcher fetcher = new GithubChangelogFetcher(repo, tagPrefix, getConfig().getString("github.token", ""));
+                    String changelog = fetcher.fetch(update.pluginName, update.oldVersion, update.newVersion);
+                    if (changelog != null) return changelog;
+
+                    // Retente avec un tag sans préfixe si la première tentative échoue
+                    ChangelogFetcher fallback = new GithubChangelogFetcher(repo, "", getConfig().getString("github.token", ""));
+                    return fallback.fetch(update.pluginName, update.oldVersion, update.newVersion);
+                } else {
+                    getLogger().info("[PluginNewsAnnouncer] Aucun repo GitHub trouvé pour \"" + update.pluginName
+                            + "\" chez " + getConfig().getString("github.username") + " — annonce sans changelog détaillé.");
+                }
+            }
         } catch (Exception e) {
             getLogger().warning("[PluginNewsAnnouncer] Échec récupération changelog pour "
                     + update.pluginName + " : " + e.getMessage());
-            return null;
         }
+        return null;
+    }
+
+    private ChangelogFetcher buildFetcherFromOverride(ConfigurationSection section) {
+        String source = section.getString("source", "none");
+        return switch (source) {
+            case "github" -> new GithubChangelogFetcher(
+                    section.getString("repo"),
+                    section.getString("tag-prefix", ""),
+                    getConfig().getString("github.token", "")
+            );
+            case "spigot" -> new SpigotChangelogFetcher(section.getInt("resource-id"));
+            case "manual" -> new ManualChangelogFetcher(new File(section.getString("changelog-file")));
+            default -> null;
+        };
     }
 
     private void announceAll(List<PluginUpdate> updates) {
@@ -107,35 +141,27 @@ public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
         }
 
         if (getConfig().getBoolean("lobby.enabled", false)) {
-            lobbyAnnouncer = new LobbyAnnouncer(
-                    this,
-                    getConfig().getString("lobby.target-server", "lobby"),
-                    getConfig().getString("lobby.display-type", "CHAT")
-            );
-            String lobbyMessage = formatter.formatForLobby(updates);
+            lobbyAnnouncer = new LobbyAnnouncer(this, getConfig().getString("lobby.target-server", "lobby"));
 
-            // Si des joueurs sont déjà en ligne (redémarrage rapide / reload), on envoie tout de suite.
             if (!getServer().getOnlinePlayers().isEmpty()) {
-                lobbyAnnouncer.send(lobbyMessage);
+                lobbyAnnouncer.send(serverName, updates);
             } else {
-                // Sinon on attend la première connexion (voir onPlayerJoin ci-dessous).
                 pendingLobbyUpdates = updates;
-                this.pendingLobbyMessage = lobbyMessage;
+                pendingLobbyWorldName = serverName;
             }
         }
     }
 
-    private String pendingLobbyMessage;
-
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        if (pendingLobbyMessage != null && lobbyAnnouncer != null) {
-            // Léger délai pour laisser le temps à la connexion Bungee de bien s'établir
-            getServer().getScheduler().runTaskLater(this, () -> {
-                lobbyAnnouncer.send(pendingLobbyMessage);
-                pendingLobbyMessage = null;
-                pendingLobbyUpdates = null;
-            }, 20L); // 1 seconde
+        if (pendingLobbyUpdates != null && lobbyAnnouncer != null) {
+            List<PluginUpdate> updatesToSend = pendingLobbyUpdates;
+            String worldName = pendingLobbyWorldName;
+            pendingLobbyUpdates = null;
+            pendingLobbyWorldName = null;
+
+            getServer().getScheduler().runTaskLater(this, () ->
+                    lobbyAnnouncer.send(worldName, updatesToSend), 20L);
         }
     }
 }

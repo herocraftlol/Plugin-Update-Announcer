@@ -1,5 +1,8 @@
 package com.example.newsannouncer.announce;
 
+import com.example.newsannouncer.PluginUpdate;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -7,48 +10,63 @@ import org.bukkit.plugin.Plugin;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.util.Collection;
+import java.util.List;
 
 /**
- * Relaie une annonce au serveur "lobby" via le canal standard "BungeeCord" (sous-canal Forward).
- * Le plugin doit être enregistré comme canal sortant "BungeeCord" dans onEnable().
+ * Relaie les nouveautés détectées vers le serveur "lobby" via le canal BungeeCord natif
+ * (sous-canal "Forward", qui ne nécessite AUCUN plugin custom côté proxy : BungeeCord
+ * relaie nativement le contenu au canal "pluginnews:feed" enregistré côté serveur lobby).
  *
- * Un plugin côté BungeeCord (voir bungee-listener/) doit écouter le sous-canal
- * "pluginnews:announce" et faire le broadcast réel aux joueurs du lobby.
+ * Le plugin PluginNewsLobby installé sur le lobby reçoit ce JSON, l'ajoute à l'historique
+ * agrégé de tous les mondes, et gère l'affichage (livre + ping de chat) par joueur.
  */
 public class LobbyAnnouncer {
 
     private final Plugin plugin;
     private final String targetServer;
-    private final String displayType; // CHAT, TITLE, ACTIONBAR
 
-    public LobbyAnnouncer(Plugin plugin, String targetServer, String displayType) {
+    public LobbyAnnouncer(Plugin plugin, String targetServer) {
         this.plugin = plugin;
         this.targetServer = targetServer;
-        this.displayType = displayType;
     }
 
-    public void send(String message) {
-        // Le plugin message doit être envoyé "depuis" un joueur connecté, c'est une contrainte
-        // du protocole BungeeCord. On prend le premier joueur en ligne, peu importe lequel.
+    public void send(String worldName, List<PluginUpdate> updates) {
         Collection<? extends Player> online = Bukkit.getOnlinePlayers();
         if (online.isEmpty()) {
-            plugin.getLogger().info("[PluginNewsAnnouncer] Aucun joueur en ligne, annonce lobby ignorée.");
+            plugin.getLogger().info("[PluginNewsAnnouncer] Aucun joueur en ligne, envoi au lobby différé.");
             return;
         }
         Player carrier = online.iterator().next();
 
         try {
+            JsonObject payload = new JsonObject();
+            payload.addProperty("world", worldName);
+            payload.addProperty("timestamp", System.currentTimeMillis());
+
+            JsonArray array = new JsonArray();
+            for (PluginUpdate u : updates) {
+                JsonObject entry = new JsonObject();
+                entry.addProperty("plugin", u.pluginName);
+                entry.addProperty("type", u.type.name());
+                entry.addProperty("oldVersion", u.oldVersion);
+                entry.addProperty("newVersion", u.newVersion);
+                entry.addProperty("changelog", u.changelog);
+                array.add(entry);
+            }
+            payload.add("updates", array);
+
             ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(byteArray);
 
             out.writeUTF("Forward");
             out.writeUTF(targetServer);
-            out.writeUTF("pluginnews:announce");
+            out.writeUTF("pluginnews:feed");
 
+            byte[] jsonBytes = payload.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
             ByteArrayOutputStream msgBytes = new ByteArrayOutputStream();
             DataOutputStream msgOut = new DataOutputStream(msgBytes);
-            msgOut.writeUTF(displayType);
-            msgOut.writeUTF(message);
+            msgOut.writeShort(jsonBytes.length);
+            msgOut.write(jsonBytes);
 
             out.writeShort(msgBytes.toByteArray().length);
             out.write(msgBytes.toByteArray());
