@@ -3,7 +3,7 @@
 
     <groupId>com.example</groupId>
     <artifactId>plugin-news-announcer</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -23,8 +23,8 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
+            <version>1.21-R0.1-20240810.100446-132</version>
+            <scope>compile</scope>
         </dependency>
         <!-- Pour parser le JSON des API GitHub / Spigot -->
         <dependency>
