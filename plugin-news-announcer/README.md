@@ -1,14 +1,19 @@
-# Plugin News Announcer
+# 🎉 Plugin News Announcer
 
-Détecte automatiquement les plugins ajoutés/mis à jour/retirés à chaque démarrage
-de tes serveurs Paper, associe automatiquement chaque plugin à son repo GitHub
-(juste besoin de ton pseudo, aucune liste à maintenir), et diffuse les nouveautés :
+**Plugin Minecraft Paper pour announceur automatiquement les mises à jour de plugins sur Discord, votre site web et via un livre interactif dans le lobby !**
 
-- immédiatement sur **Discord** et sur ton **site web** (par monde)
-- au **lobby**, agrégées pour TOUS les mondes : un ping de chat + un livre personnalisé
-  par joueur selon ce qu'il a déjà vu
+---
 
-## Composition (2 projets)
+## ✨ Fonctionnalités principales
+
+- **🔍 Détection automatique** : Scanne les plugins ajoutés, mis à jour ou retirés à chaque démarrage du serveur
+- **📦 Association automatique GitHub** : Plus besoin de configurer chaque plugin manuellement - entrez simplement votre pseudo GitHub et le plugin fait le reste
+- **💬 Annonces Discord** : Notification instantanée avec le nom du plugin, l'ancienne et nouvelle version, et le changelog
+- **🌐 Intégration site web** : Envoie les actualités directement à votre API
+- **📖 Livre interactif** : Les joueurs reçoivent un livre personnalisé au lobby avec les nouveautés qu'ils n'ont pas encore vues
+- **🔄 Suivi par joueur** : Le système se souvient de ce que chaque joueur a déjà vu pour éviter les répétitions
+
+## Architecture du système
 
 - `plugin-news-announcer/` → à installer sur **chaque serveur Paper** (survie, skyblock, etc.)
   Détecte les changements de plugins, résout le changelog, envoie Discord/site web,
