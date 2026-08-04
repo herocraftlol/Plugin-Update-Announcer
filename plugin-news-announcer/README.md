@@ -1,12 +1,34 @@
-# Plugin News Announcer
+# 📢 Plugin News Announcer
 
-Détecte automatiquement les plugins ajoutés/mis à jour/retirés à chaque démarrage
-de tes serveurs Paper, associe automatiquement chaque plugin à son repo GitHub
-(juste besoin de ton pseudo, aucune liste à maintenir), et diffuse les nouveautés :
+**Plugin Minecraft Paper** qui détecte automatiquement les mises à jour de plugins sur tes serveurs et diffuse les nouveautés où tu le souhaites !
 
-- immédiatement sur **Discord** et sur ton **site web** (par monde)
-- au **lobby**, agrégées pour TOUS les mondes : un ping de chat + un livre personnalisé
-  par joueur selon ce qu'il a déjà vu
+---
+
+## ✨ Fonctionnalités
+
+🔍 **Détection automatique** — Scanne les plugins à chaque redémarrage du serveur et détecte les ajouts, mises à jour et suppressions.
+
+🤖 **Résolution GitHub intelligente** — Associe automatiquement chaque plugin à son dépôt GitHub en utilisant simplement ton nom d'utilisateur. Plus besoin de configurer une liste manuelle !
+
+📢 **Annonces multiples** — Diffuse les nouveautés simultanément sur :
+- **Discord** via webhook
+- **Ton site web** via API
+- **Le lobby** pour une expérience centralisée
+
+📖 **Livre personnalisé** — Chaque joueur reçoit un livre interactif dans le lobby contenant uniquement les nouveautés qu'il n'a pas encore vues.
+
+⚡ **Simple à configurer** — Aucune liste à maintenir, le plugin fait tout automatiquement.
+
+---
+
+## 🏗️ Architecture du projet
+
+Ce projet est composé de **2 plugins complémentaires** :
+
+| Plugin | Emplacement | Rôle |
+|--------|-------------|------|
+| **plugin-news-announcer** | Chaque serveur Paper | Détecte les changements de plugins, récupère les changelogs depuis GitHub, et envoie les annonces |
+| **plugin-news-lobby** | Serveur lobby uniquement | Reçoit les annonces de tous les mondes, stocke l'historique, et gère l'affichage du livre
 
 ## Composition (2 projets)
 
