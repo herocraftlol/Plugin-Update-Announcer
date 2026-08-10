@@ -24,15 +24,24 @@ website:
   api-key: "change-moi"
 
 # ---- GitHub ----
-# Renseigne juste ton pseudo : le plugin liste TOUS tes repos publics et les associe
-# automatiquement aux plugins installés en comparant les noms. Plus besoin de rien
-# ajouter manuellement quand tu crées un nouveau repo.
+# Renseigne juste ton pseudo/organisation : le plugin liste TOUS les repos publics de
+# https://github.com/herocraftlol et les associe automatiquement aux plugins installés
+# en comparant les noms. Plus besoin de rien ajouter manuellement quand tu crées un
+# nouveau repo dans l'organisation.
 github:
-  username: "TonPseudoGithub"
+  username: "herocraftlol"
   token: ""   # recommandé : Personal Access Token (scope "public_repo"), passe de 60 à 5000 req/h
   # Format des tags utilisé par la majorité de tes repos ("v1.2.3" -> "v", "1.2.3" -> "")
   # Sert de valeur par défaut ; le fetcher retente aussi en fuzzy-match si ça ne correspond pas.
   default-tag-prefix: "v"
+
+# ---- Vérification en temps réel ----
+# En plus du scan fait au démarrage du serveur, le plugin relance périodiquement le
+# même cycle de détection (scan des jars + vérification des dernières releases GitHub)
+# sans nécessiter de redémarrage. Utile si tu déploies un nouveau .jar à chaud, ou si
+# une release est publiée sur https://github.com/herocraftlol pendant que le serveur tourne.
+# Mets 0 pour désactiver et ne scanner qu'au démarrage.
+scan-interval-minutes: 15
 
 # ---- Overrides manuels (optionnel) ----
 # Utile seulement si :

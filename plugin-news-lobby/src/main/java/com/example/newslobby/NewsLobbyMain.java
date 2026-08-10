@@ -13,8 +13,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,11 +42,9 @@ public class NewsLobbyMain extends JavaPlugin implements Listener, PluginMessage
         if (!channel.equals("pluginnews:feed")) return;
 
         try {
-            DataInputStream in = new DataInputStream(new ByteArrayInputStream(message));
-            short len = in.readShort();
-            byte[] jsonBytes = new byte[len];
-            in.readFully(jsonBytes);
-            String json = new String(jsonBytes, StandardCharsets.UTF_8);
+            // Le plugin Velocity plugin-news-proxy relaie ici directement les octets JSON
+            // bruts (il a déjà retiré le nom du serveur cible utilisé pour le routage).
+            String json = new String(message, StandardCharsets.UTF_8);
 
             JsonObject payload = JsonParser.parseString(json).getAsJsonObject();
             String world = payload.get("world").getAsString();
@@ -108,7 +104,9 @@ public class NewsLobbyMain extends JavaPlugin implements Listener, PluginMessage
                     .toList();
 
             if (!newEntries.isEmpty()) {
-                player.openBook(bookBuilder.build(newEntries, getConfig().getString("book-title", "Nouveautés")));
+                player.openBook(bookBuilder.build(newEntries,
+                        getConfig().getString("book-title", "Nouveautés"),
+                        getConfig().getString("book-author", "Serveur")));
             }
             lastSeenStore.setLastSeen(player.getUniqueId(), System.currentTimeMillis());
 
@@ -133,7 +131,9 @@ public class NewsLobbyMain extends JavaPlugin implements Listener, PluginMessage
             return true;
         }
 
-        player.openBook(bookBuilder.build(entries, getConfig().getString("book-title", "Nouveautés")));
+        player.openBook(bookBuilder.build(entries,
+                getConfig().getString("book-title", "Nouveautés"),
+                getConfig().getString("book-author", "Serveur")));
         return true;
     }
 }

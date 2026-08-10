@@ -1,6 +1,9 @@
 # Titre affiché en haut du livre
 book-title: "Nouveautés du serveur"
 
+# Auteur affiché sur le livre (ex: nom de ton réseau)
+book-author: "HeroCraft"
+
 # Durée pendant laquelle un fichier de nouveauté reste dans l'historique agrégé (purge auto)
 retention-days: 60
 
