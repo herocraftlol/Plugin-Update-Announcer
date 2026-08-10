@@ -3,7 +3,7 @@
 
     <groupId>com.example</groupId>
     <artifactId>plugin-news-lobby</artifactId>
-    <version>1.0.4</version>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -35,6 +35,13 @@
 
     <build>
         <finalName>${project.artifactId}</finalName>
+        <resources>
+            <!-- Nécessaire pour que ${project.version} soit remplacé dans plugin.yml -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

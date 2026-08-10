@@ -9,18 +9,27 @@ import org.bukkit.plugin.Plugin;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 
 /**
- * Relaie les nouveautés détectées vers le serveur "lobby" via le canal BungeeCord natif
- * (sous-canal "Forward", qui ne nécessite AUCUN plugin custom côté proxy : BungeeCord
- * relaie nativement le contenu au canal "pluginnews:feed" enregistré côté serveur lobby).
+ * Relaie les nouveautés détectées vers le serveur "lobby" via un canal moderne dédié
+ * ("pluginnews:feed"), relayé entre serveurs par le plugin Velocity plugin-news-proxy.
  *
- * Le plugin PluginNewsLobby installé sur le lobby reçoit ce JSON, l'ajoute à l'historique
- * agrégé de tous les mondes, et gère l'affichage (livre + ping de chat) par joueur.
+ * On n'utilise volontairement PAS le canal legacy "BungeeCord"/"Forward" : celui-ci a un
+ * bug connu sur Velocity qui empêche le relai correct vers un sous-canal personnalisé
+ * (https://github.com/PaperMC/Velocity/issues/1312), ce qui ferait que les messages
+ * n'arriveraient jamais au lobby, sans aucune erreur visible.
+ *
+ * Format du message envoyé : [UTF nom-du-serveur-cible][octets bruts du JSON].
+ * Le plugin-news-proxy lit le nom du serveur cible, puis relaie le reste tel quel sur le
+ * même canal vers ce serveur. Le plugin PluginNewsLobby installé sur le lobby reçoit donc
+ * directement les octets JSON, sans encapsulation supplémentaire à décoder.
  */
 public class LobbyAnnouncer {
+
+    private static final String CHANNEL = "pluginnews:feed";
 
     private final Plugin plugin;
     private final String targetServer;
@@ -55,23 +64,17 @@ public class LobbyAnnouncer {
             }
             payload.add("updates", array);
 
+            byte[] jsonBytes = payload.toString().getBytes(StandardCharsets.UTF_8);
+
             ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(byteArray);
-
-            out.writeUTF("Forward");
             out.writeUTF(targetServer);
-            out.writeUTF("pluginnews:feed");
+            out.write(jsonBytes);
 
-            byte[] jsonBytes = payload.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            ByteArrayOutputStream msgBytes = new ByteArrayOutputStream();
-            DataOutputStream msgOut = new DataOutputStream(msgBytes);
-            msgOut.writeShort(jsonBytes.length);
-            msgOut.write(jsonBytes);
+            carrier.sendPluginMessage(plugin, CHANNEL, byteArray.toByteArray());
 
-            out.writeShort(msgBytes.toByteArray().length);
-            out.write(msgBytes.toByteArray());
-
-            carrier.sendPluginMessage(plugin, "BungeeCord", byteArray.toByteArray());
+            plugin.getLogger().info("[PluginNewsAnnouncer] " + updates.size()
+                    + " nouveauté(s) envoyée(s) vers le lobby (\"" + targetServer + "\").");
         } catch (Exception e) {
             plugin.getLogger().warning("[PluginNewsAnnouncer] Échec relai lobby : " + e.getMessage());
         }

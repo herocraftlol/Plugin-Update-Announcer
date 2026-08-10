@@ -2,7 +2,7 @@ name: PluginNewsLobby
 version: '${project.version}'
 main: com.example.newslobby.NewsLobbyMain
 api-version: '1.21'
-author: TonPseudo
+author: HeroCraft
 description: Affiche les nouveautés agrégées de tous les mondes au lobby (livre + ping de chat)
 
 commands:

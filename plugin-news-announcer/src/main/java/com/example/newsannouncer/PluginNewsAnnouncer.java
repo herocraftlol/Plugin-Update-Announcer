@@ -25,10 +25,17 @@ public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
     private String pendingLobbyWorldName;
     private LobbyAnnouncer lobbyAnnouncer;
 
+    // Empêche deux cycles de détection de tourner en même temps (scan périodique qui
+    // chevaucherait le scan de démarrage, par ex.)
+    private final java.util.concurrent.atomic.AtomicBoolean scanInProgress =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+        // On utilise un canal moderne dédié plutôt que le "BungeeCord" legacy : voir la
+        // javadoc de LobbyAnnouncer pour l'explication du bug Velocity contourné.
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "pluginnews:feed");
         getServer().getPluginManager().registerEvents(this, this);
 
         String username = getConfig().getString("github.username", "");
@@ -36,10 +43,29 @@ public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
             repoResolver = new GithubRepoResolver(username, getConfig().getString("github.token", ""));
         }
 
+        // Premier scan immédiat au démarrage
         getServer().getScheduler().runTaskAsynchronously(this, this::runDetectionCycle);
+
+        // Puis, pour un suivi "temps réel" sans avoir à redémarrer le serveur : on
+        // relance périodiquement le même cycle (scan des jars + vérification des
+        // dernières releases GitHub) selon l'intervalle configuré.
+        int intervalMinutes = getConfig().getInt("scan-interval-minutes", 15);
+        if (intervalMinutes > 0) {
+            long periodTicks = intervalMinutes * 60L * 20L; // minutes -> ticks (20 ticks/s)
+            getServer().getScheduler().runTaskTimerAsynchronously(
+                    this, this::runDetectionCycle, periodTicks, periodTicks);
+            getLogger().info("[PluginNewsAnnouncer] Vérification périodique activée toutes les "
+                    + intervalMinutes + " minute(s).");
+        } else {
+            getLogger().info("[PluginNewsAnnouncer] Vérification périodique désactivée (scan au démarrage uniquement).");
+        }
     }
 
     private void runDetectionCycle() {
+        if (!scanInProgress.compareAndSet(false, true)) {
+            getLogger().info("[PluginNewsAnnouncer] Cycle de détection déjà en cours, on saute ce passage.");
+            return;
+        }
         try {
             File pluginsFolder = new File("plugins");
             PluginScanner scanner = new PluginScanner();
@@ -68,6 +94,8 @@ public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
 
         } catch (Exception e) {
             getLogger().warning("[PluginNewsAnnouncer] Erreur pendant le cycle de détection : " + e.getMessage());
+        } finally {
+            scanInProgress.set(false);
         }
     }
 

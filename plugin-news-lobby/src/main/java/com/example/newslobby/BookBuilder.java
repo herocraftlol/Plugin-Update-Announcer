@@ -24,12 +24,16 @@ public class BookBuilder {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM");
 
     public ItemStack build(List<NewsEntry> entries, String bookTitle) {
+        return build(entries, bookTitle, "Serveur");
+    }
+
+    public ItemStack build(List<NewsEntry> entries, String bookTitle, String bookAuthor) {
         List<String> pages = buildPages(entries);
 
         ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
         BookMeta meta = (BookMeta) book.getItemMeta();
         meta.setTitle(bookTitle);
-        meta.setAuthor("Serveur");
+        meta.setAuthor(bookAuthor == null || bookAuthor.isBlank() ? "Serveur" : bookAuthor);
         meta.setPages(pages);
         book.setItemMeta(meta);
         return book;

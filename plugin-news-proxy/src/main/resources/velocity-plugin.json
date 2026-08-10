@@ -1,0 +1,8 @@
+{
+  "id": "plugin-news-proxy",
+  "name": "PluginNewsProxy",
+  "version": "1.1.0",
+  "description": "Relaie les nouveautés de plugins entre sous-serveurs via un canal moderne dédié, en contournant le bug connu de Velocity sur le Forward BungeeCord (PaperMC/Velocity#1312).",
+  "authors": ["HeroCraft"],
+  "main": "com.example.newsproxy.PluginNewsProxy"
+}
