@@ -24,11 +24,14 @@ plateformes externes — **sans aucune configuration manuelle par plugin**.
   encore découvertes, groupées par sous-serveur puis par plugin.
 - 🌉 **Plugin proxy Velocity dédié** qui contourne le [bug connu #1312](https://github.com/PaperMC/Velocity/issues/1312)
   de Velocity sur le canal legacy BungeeCord/Forward.
-- 🌐 **API HTTP embarquée** (nouveauté v1.3.0) : le lobby expose directement son journal de
+- 🌐 **API HTTP embarquée** : le lobby expose directement son journal de
   nouveautés (`/news/recent`, `/news/date`) pour que ton site web l'affiche sans interroger
   chaque sous-serveur.
-- 🎛️ **Affichage auto contrôlable par joueur** (nouveauté v1.3.0) : `/nouveautes auto on|off`
+- 🎛️ **Affichage auto contrôlable par joueur** : `/nouveautes auto on|off`
   et consultation par date avec `/nouveautes date jj/mm/aaaa`.
+- 🆕 **Détection des « releases récentes »** (nouveauté v1.4.0) : un plugin déjà installé
+  dont la version n'a pas changé est tout de même signalé si sa release GitHub a été
+  publiée récemment — fini les nouveautés invisibles tant que le `.jar` n'est pas remplacé.
 
 ---
 
@@ -72,9 +75,9 @@ Ce pack contourne donc ce bug avec `plugin-news-proxy` : un canal moderne namesp
 
 Télécharge les `.jar` depuis la [page des releases](https://github.com/herocraftlol/Plugin-Update-Announcer/releases) :
 
-- `plugin-news-announcer-v1.3.0.jar`
-- `plugin-news-lobby-v1.3.0.jar`
-- `plugin-news-proxy-v1.3.0.jar`
+- `plugin-news-announcer-v1.4.0.jar`
+- `plugin-news-lobby-v1.4.0.jar`
+- `plugin-news-proxy-v1.4.0.jar`
 
 ### 2. Déployer
 
@@ -214,6 +217,38 @@ Les fichiers `.jar` sont générés dans `target/` de chaque module.
 
 ## 🆕 Nouveautés de la version
 
+### v1.4.0
+
+- 🆕 **Détection des « releases récentes » GitHub** : jusqu'ici, un plugin n'était signalé
+  que si son `.jar` changeait localement (ajout, mise à jour ou retrait). Désormais, pour
+  chaque plugin **déjà installé dont la version n'a pas bougé**, le plugin vérifie si la
+  release GitHub correspondant à cette version a été **publiée récemment** (fenêtre
+  réglable via `github.recent-release-check.window-days`, 7 jours par défaut). C'est utile
+  quand un plugin est déployé une seule fois avec une version toute fraîche sur GitHub :
+  sans cette vérification, la nouveauté ne serait **jamais** détectée (aucun changement
+  local ne se produira tant que le `.jar` n'est pas remplacé).
+  - Chaque version n'est signalée qu'**une seule fois** par plugin (mémoire persistée dans
+    `recent_release_announced.yml`), pour ne pas ré-annoncer la même chose à chaque cycle
+    de scan tant qu'on reste dans la fenêtre.
+  - Nouveau type d'événement **`RECENT`** (✨ « release GitHub récente ») dans Discord, le
+    livre du lobby et le ping de chat, distinct des ajouts / mises à jour / retraits
+    classiques.
+  - Récupère automatiquement le changelog de la release correspondante, comme pour une
+    mise à jour normale.
+- 🔧 **Changelog des plugins ajoutés** : la résolution du changelog s'applique désormais
+  aussi aux plugins **ajoutés** (type `ADDED`), et pas seulement aux mises à jour, pour
+  afficher les notes de version dès la première installation détectée.
+- ⚙️ **Nouvelle option de config `github.recent-release-check`** :
+  ```yaml
+  github:
+    recent-release-check:
+      enabled: true
+      window-days: 7
+  ```
+- 📦 **Fichiers `.jar` compilés et publiés** pour les trois modules directement dans la
+  [release v1.4.0](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/tag/v1.4.0),
+  plus une archive du code source (`plugin-news-announcer-1.4.0-herocraftlol-src.zip`).
+
 ### v1.3.0
 
 - 🌐 **API HTTP embarquée dans le lobby** (`NewsHttpApi`) : un petit serveur HTTP (basé sur le
@@ -272,7 +307,7 @@ Les fichiers `.jar` sont générés dans `target/` de chaque module.
 
 ## 📦 Téléchargement
 
-👉 [**Dernière version (v1.3.0)**](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/latest)
+👉 [**Dernière version (v1.4.0)**](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/latest)
 
 ---
 

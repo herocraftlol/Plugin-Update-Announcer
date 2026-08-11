@@ -36,7 +36,7 @@ import java.util.Optional;
 @Plugin(
         id = "plugin-news-proxy",
         name = "PluginNewsProxy",
-        version = "1.3.0",
+        version = "1.4.0",
         description = "Relaie pluginnews:feed entre sous-serveurs (contournement du bug Velocity #1312)"
 )
 public class PluginNewsProxy {

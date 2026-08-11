@@ -32,6 +32,18 @@ github:
   username: "herocraftlol"
   token: ""   # recommandé : Personal Access Token GitHub (scope "public_repo"), passe de 60 à 5000 req/h
   default-tag-prefix: "v"
+  # Le changelog annoncé agrège TOUTES les releases GitHub publiées depuis l'ancienne
+  # version installée, bornées à cette fenêtre (en jours). Ex: si le serveur redémarre
+  # après 3 releases sorties en 4 jours, les 3 changelogs sont concaténés en un seul.
+  changelog-window-days: 7
+  # Vérifie AUSSI, pour les plugins déjà installés dont la version locale n'a PAS changé
+  # entre deux scans (donc invisibles pour la détection habituelle), si la release GitHub
+  # correspondant à leur version actuelle a été publiée récemment. Utile si un plugin est
+  # déployé une seule fois avec une version qui, elle, vient de sortir sur GitHub : sans ça,
+  # cette nouveauté ne serait jamais détectée. Chaque version n'est signalée qu'une seule fois.
+  recent-release-check:
+    enabled: true
+    window-days: 7
 
 scan-interval-minutes: 15
 

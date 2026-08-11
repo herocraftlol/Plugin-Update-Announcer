@@ -96,6 +96,25 @@ public class GithubChangelogFetcher implements ChangelogFetcher {
         return formatAggregatedChangelog(collected);
     }
 
+    /**
+     * @return le timestamp de publication (epoch millis) de la release GitHub correspondant
+     *         EXACTEMENT à `version`, ou null si aucune release ne matche cette version.
+     *         Utilisé pour vérifier si la version déjà installée localement est elle-même
+     *         une release récente (voir github.recent-release-check dans la config).
+     */
+    public Long getPublishedAtForVersion(String version) throws Exception {
+        List<JsonObject> releases = fetchRecentReleases();
+        String directTag = tagPrefix + version;
+        for (JsonObject release : releases) {
+            String tagName = release.get("tag_name").getAsString();
+            if (tagName.equals(directTag) || tagName.contains(version)) {
+                long ts = parsePublishedAt(release);
+                return ts == 0L ? null : ts;
+            }
+        }
+        return null;
+    }
+
     private String formatAggregatedChangelog(List<JsonObject> releases) {
         StringBuilder sb = new StringBuilder();
         boolean multiple = releases.size() > 1;
