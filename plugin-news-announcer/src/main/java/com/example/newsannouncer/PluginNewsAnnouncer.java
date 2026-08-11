@@ -120,12 +120,13 @@ public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
                 String repo = repoResolver.resolveRepo(update.pluginName);
                 if (repo != null) {
                     String tagPrefix = getConfig().getString("github.default-tag-prefix", "v");
-                    ChangelogFetcher fetcher = new GithubChangelogFetcher(repo, tagPrefix, getConfig().getString("github.token", ""));
+                    int windowDays = getConfig().getInt("github.changelog-window-days", 7);
+                    ChangelogFetcher fetcher = new GithubChangelogFetcher(repo, tagPrefix, getConfig().getString("github.token", ""), windowDays);
                     String changelog = fetcher.fetch(update.pluginName, update.oldVersion, update.newVersion);
                     if (changelog != null) return changelog;
 
                     // Retente avec un tag sans préfixe si la première tentative échoue
-                    ChangelogFetcher fallback = new GithubChangelogFetcher(repo, "", getConfig().getString("github.token", ""));
+                    ChangelogFetcher fallback = new GithubChangelogFetcher(repo, "", getConfig().getString("github.token", ""), windowDays);
                     return fallback.fetch(update.pluginName, update.oldVersion, update.newVersion);
                 } else {
                     getLogger().info("[PluginNewsAnnouncer] Aucun repo GitHub trouvé pour \"" + update.pluginName
@@ -145,7 +146,8 @@ public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
             case "github" -> new GithubChangelogFetcher(
                     section.getString("repo"),
                     section.getString("tag-prefix", ""),
-                    getConfig().getString("github.token", "")
+                    getConfig().getString("github.token", ""),
+                    getConfig().getInt("github.changelog-window-days", 7)
             );
             case "spigot" -> new SpigotChangelogFetcher(section.getInt("resource-id"));
             case "manual" -> new ManualChangelogFetcher(new File(section.getString("changelog-file")));

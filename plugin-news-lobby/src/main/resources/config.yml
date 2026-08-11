@@ -1,14 +1,45 @@
-# ============================================================
-# plugins/PluginNewsLobby/config.yml
-# À installer UNIQUEMENT sur le serveur lobby, EN PLUS de
-# PluginNewsAnnouncer (voir config-PluginNewsAnnouncer-lobby.yml).
-# ============================================================
-
+# Titre affiché en haut du livre
 book-title: "Nouveautés du serveur"
+
+# Auteur affiché sur le livre (ex: nom de ton réseau)
 book-author: "HeroCraft"
+
+# Durée pendant laquelle un fichier de nouveauté reste dans l'historique agrégé (purge auto)
 retention-days: 60
+
+# À la toute première connexion d'un joueur (jamais vu auparavant), on ne montre que
+# les nouveautés des N derniers jours, pas tout l'historique.
 first-join-window-days: 7
+
+# Fenêtre MINIMALE toujours affichée par défaut à CHAQUE connexion, même pour un joueur
+# revenu il y a moins longtemps : garantit qu'on voit "au moins" les nouveautés des N
+# derniers jours, en plus de ce qui est nouveau depuis sa dernière visite si plus ancien.
+default-window-days: 7
+
+# Le livre s'ouvre automatiquement à la connexion par défaut. Chaque joueur peut
+# désactiver/réactiver cet affichage automatique avec /nouveautes auto off|on
+# (il pourra toujours consulter /nouveautes manuellement quoi qu'il arrive).
+auto-open:
+  default: true
+  # Ne pas rouvrir le livre automatiquement plus d'une fois par intervalle, pour éviter
+  # de spammer un joueur qui se reconnecte plusieurs fois d'affilée sans rien de neuf.
+  min-interval-hours: 6
+
+# Fenêtre de nouveautés montrée par la commande /nouveautes (relecture à la demande)
 review-window-days: 30
 
+# Message court dans le chat dès qu'une mise à jour arrive, pour les joueurs déjà connectés
 chat-ping:
   enabled: true
+
+# API HTTP légère embarquée, exposée pour que ton site web affiche les nouveautés
+# automatiquement, sans que tu aies à interroger chaque sous-serveur toi-même :
+#   GET /news/recent?days=7&limit=7  -> les dernières nouveautés (fenêtre + nombre réglables,
+#                                        7 jours / 7 entrées par défaut)
+#   GET /news/date?date=AAAA-MM-JJ   -> le journal des nouveautés d'un jour précis
+http-api:
+  enabled: false
+  port: 8085
+  # Optionnel : restreint les requêtes à cette clé, passée en en-tête "X-API-Key"
+  # (laisse vide pour ne rien exiger — recommandé de la remplir si le port est exposé publiquement)
+  api-key: ""

@@ -98,12 +98,20 @@ ne correspond pas assez (voir les exemples commentés dans le fichier généré)
 
 ```yaml
 book-title: "Nouveautés du serveur"
-book-author: "HeroCraft"    # auteur affiché sur le livre
-retention-days: 60          # combien de temps l'historique agrégé est conservé
-first-join-window-days: 7   # fenêtre montrée à un joueur qui se connecte pour la 1ère fois
-review-window-days: 30      # fenêtre montrée par /nouveautes
+book-author: "HeroCraft"     # auteur affiché sur le livre
+retention-days: 60           # combien de temps l'historique agrégé est conservé
+first-join-window-days: 7    # fenêtre montrée à un joueur qui se connecte pour la 1ère fois
+default-window-days: 7       # fenêtre MINIMALE garantie à chaque connexion (voir plus bas)
+auto-open:
+  default: true               # affichage auto du livre à la connexion (activable/désactivable
+  min-interval-hours: 6       # par joueur via /nouveautes auto on|off)
+review-window-days: 30       # fenêtre montrée par /nouveautes (relecture manuelle)
 chat-ping:
   enabled: true
+http-api:                    # flux JSON pour ton site web (voir section dédiée plus bas)
+  enabled: false
+  port: 8085
+  api-key: ""
 ```
 
 ## Comportement
@@ -119,16 +127,45 @@ chat-ping:
 3. Annonce immédiate sur Discord + site web (par sous-serveur)
 4. Transmission au lobby (dès qu'un joueur est en ligne sur le sous-serveur, pour
    permettre l'envoi via `pluginnews:feed`, relayé par `plugin-news-proxy` sur le proxy)
-5. Le lobby stocke l'entrée dans son historique agrégé (tous sous-serveurs confondus,
-   lobby lui-même inclus), envoie un ping de chat aux joueurs déjà connectés au lobby
-6. À la connexion d'un joueur au lobby :
-   - Première connexion jamais vue sur le réseau → livre avec les nouveautés des 7
-     derniers jours max (`first-join-window-days`)
-   - Connexions suivantes → livre avec uniquement ce qui est nouveau depuis sa
-     dernière visite, groupé par sous-serveur puis par plugin, concis et lisible
-   - Rien de nouveau depuis sa dernière visite → aucun livre ne s'ouvre
-7. Un joueur peut toujours retaper `/nouveautes` pour revoir l'historique récent
-   (30 jours par défaut), sans que ça affecte le suivi automatique par joueur
+5. Le lobby stocke l'entrée dans son **journal agrégé** (tous sous-serveurs confondus,
+   lobby lui-même inclus — gardé en mémoire pour un accès instantané, persisté sur disque
+   pour survivre aux redémarrages), envoie un ping de chat aux joueurs déjà connectés
+6. À la connexion d'un joueur au lobby, le livre s'ouvre automatiquement (sauf s'il a
+   désactivé ça, voir plus bas) avec le contenu suivant :
+   - **Au moins** les nouveautés des `default-window-days` derniers jours (7 par défaut) —
+     cette fenêtre minimale est **toujours garantie**, quelle que soit la fréquence de
+     connexion du joueur
+   - Élargie automatiquement si sa dernière visite remonte à plus longtemps que ça (il
+     verra alors tout ce qui est nouveau depuis cette dernière visite)
+   - Pas rouvert plus d'une fois toutes les `auto-open.min-interval-hours` heures (6h par
+     défaut), pour ne pas spammer un joueur qui se reconnecte souvent
+7. `/nouveautes` : revoir l'historique récent (30 jours par défaut) à tout moment
+8. `/nouveautes auto on|off` : chaque joueur peut désactiver/réactiver l'ouverture
+   automatique du livre à la connexion (il garde `/nouveautes` pour consulter à la demande)
+9. `/nouveautes date jj/mm/aaaa` : consulter le journal des nouveautés d'un jour précis
+   (ex: `/nouveautes date 05/08/2026`)
+
+## Flux JSON pour le site web
+
+Si `http-api.enabled: true`, le lobby expose deux routes en HTTP simple (JDK natif, aucune
+dépendance) directement interrogeables par ton site :
+
+- `GET http://<ip-du-lobby>:8085/news/recent?days=7&limit=7` → les nouveautés des 7
+  derniers jours (paramètres facultatifs, 7/7 par défaut), triées du plus récent au
+  plus ancien
+- `GET http://<ip-du-lobby>:8085/news/date?date=2026-08-05` → le journal complet du
+  jour précisé (format `AAAA-MM-JJ`)
+
+Si `http-api.api-key` est renseigné, chaque requête doit inclure l'en-tête
+`X-API-Key: ta-clé`. **Recommandé si ce port est exposé publiquement** — sinon,
+restreins-le à ton réseau interne (pare-feu / bind local) plutôt que de l'exposer sur
+Internet sans clé.
+
+Chaque entrée JSON a la forme :
+```json
+{ "world": "Survie", "plugin": "GradePlugin", "type": "ADDED",
+  "oldVersion": null, "newVersion": "2.1.0", "changelog": "...", "timestamp": 1754400000000 }
+```
 
 ## Notes importantes
 

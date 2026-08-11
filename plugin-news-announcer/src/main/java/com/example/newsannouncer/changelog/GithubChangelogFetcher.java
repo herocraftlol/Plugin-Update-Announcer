@@ -10,16 +10,24 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * Récupère les notes de version (body de la release GitHub) correspondant à la nouvelle
- * version détectée d'un plugin.
+ * Récupère et AGRÈGE les notes de version (body des releases GitHub) de tout ce qui a
+ * été publié depuis l'ancienne version installée, borné à une fenêtre de N jours
+ * (par défaut 7). Contrairement à une simple récupération de la dernière release, ça
+ * couvre le cas où plusieurs releases ont été publiées entre deux scans (ex: le serveur
+ * était éteint, ou plusieurs versions sont sorties coup sur coup).
  *
- * Fonctionnement :
- *  1) Essaie d'abord un match direct sur le tag "{tagPrefix}{newVersion}" (ex: "v1.2.3")
- *  2) Si ça échoue (tag introuvable, format différent d'un repo à l'autre),
- *     on liste les releases récentes et on cherche celle dont le tag CONTIENT la version.
+ * Algorithme (les releases GitHub sont renvoyées triées du plus récent au plus ancien) :
+ *  on parcourt la liste depuis le haut et on empile chaque release tant que :
+ *   - elle est plus récente que la fenêtre (cutoff = maintenant - windowDays), ET
+ *   - on n'a pas encore atteint le tag correspondant à l'ancienne version installée
+ *  → dès qu'une des deux conditions n'est plus vraie, on s'arrête.
  */
 public class GithubChangelogFetcher implements ChangelogFetcher {
 
@@ -27,60 +35,126 @@ public class GithubChangelogFetcher implements ChangelogFetcher {
     private static final HttpClient CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
+    private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    private final String repo;       // ex: "EngineHub/WorldGuard"
-    private final String tagPrefix;  // ex: "v" (peut être vide)
+    private final String repo;        // ex: "EngineHub/WorldGuard"
+    private final String tagPrefix;   // ex: "v" (peut être vide)
     private final String githubToken; // peut être vide
+    private final int windowDays;
 
     public GithubChangelogFetcher(String repo, String tagPrefix, String githubToken) {
+        this(repo, tagPrefix, githubToken, 7);
+    }
+
+    public GithubChangelogFetcher(String repo, String tagPrefix, String githubToken, int windowDays) {
         this.repo = repo;
         this.tagPrefix = tagPrefix == null ? "" : tagPrefix;
         this.githubToken = githubToken;
+        this.windowDays = windowDays;
     }
 
     @Override
     public String fetch(String pluginName, String oldVersion, String newVersion) throws Exception {
-        // Tentative 1 : match exact sur le tag construit
-        String directTag = tagPrefix + newVersion;
-        String body = fetchReleaseByTag(directTag);
-        if (body != null) return body;
+        List<JsonObject> releases = fetchRecentReleases();
+        if (releases.isEmpty()) return null;
 
-        // Tentative 2 : parcourir les releases récentes et chercher un tag qui contient la version
-        return fetchReleaseByFuzzyMatch(newVersion);
-    }
+        String oldTagCandidateA = tagPrefix + (oldVersion == null ? "" : oldVersion);
+        long cutoffMillis = Instant.now().toEpochMilli() - (windowDays * 24L * 60L * 60L * 1000L);
 
-    private String fetchReleaseByTag(String tag) throws Exception {
-        HttpRequest request = buildRequest("https://api.github.com/repos/" + repo + "/releases/tags/" + tag);
-        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        List<JsonObject> collected = new ArrayList<>();
+        for (JsonObject release : releases) {
+            String tagName = release.get("tag_name").getAsString();
+            long publishedAt = parsePublishedAt(release);
 
-        if (response.statusCode() == 200) {
-            JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
-            JsonElement body = json.get("body");
-            return (body != null && !body.isJsonNull()) ? body.getAsString() : null;
+            // Borne 1 : on ne remonte pas plus loin que la fenêtre de N jours
+            if (publishedAt < cutoffMillis) break;
+
+            // Borne 2 : on s'arrête juste avant l'ancienne version (elle n'est pas incluse,
+            // le joueur l'a déjà vue lors de la mise à jour précédente)
+            if (oldVersion != null && (tagName.equals(oldTagCandidateA) || tagName.contains(oldVersion))) {
+                break;
+            }
+
+            collected.add(release);
         }
-        return null; // 404 = ce tag n'existe pas, on tentera le fuzzy match
+
+        // Si rien collecté (ex: oldVersion == newVersion malgré tout, ou fenêtre trop courte),
+        // on retombe sur la seule release correspondant à la nouvelle version, tant pis pour
+        // l'agrégation, au moins on affiche quelque chose.
+        if (collected.isEmpty()) {
+            for (JsonObject release : releases) {
+                String tagName = release.get("tag_name").getAsString();
+                if (tagName.equals(tagPrefix + newVersion) || tagName.contains(newVersion)) {
+                    collected.add(release);
+                    break;
+                }
+            }
+        }
+
+        if (collected.isEmpty()) return null;
+
+        return formatAggregatedChangelog(collected);
     }
 
-    private String fetchReleaseByFuzzyMatch(String newVersion) throws Exception {
-        HttpRequest request = buildRequest("https://api.github.com/repos/" + repo + "/releases?per_page=15");
+    private String formatAggregatedChangelog(List<JsonObject> releases) {
+        StringBuilder sb = new StringBuilder();
+        boolean multiple = releases.size() > 1;
+
+        for (JsonObject release : releases) {
+            JsonElement bodyEl = release.get("body");
+            String body = (bodyEl != null && !bodyEl.isJsonNull()) ? bodyEl.getAsString().trim() : "";
+            if (body.isEmpty()) continue;
+
+            if (multiple) {
+                String tagName = release.get("tag_name").getAsString();
+                String dateLabel = formatPublishedDate(release);
+                sb.append("### ").append(tagName);
+                if (dateLabel != null) sb.append(" (").append(dateLabel).append(")");
+                sb.append("\n");
+            }
+            sb.append(body).append("\n\n");
+        }
+
+        String result = sb.toString().trim();
+        return result.isEmpty() ? null : result;
+    }
+
+    private long parsePublishedAt(JsonObject release) {
+        try {
+            JsonElement el = release.get("published_at");
+            if (el == null || el.isJsonNull()) return 0L;
+            return Instant.parse(el.getAsString()).toEpochMilli();
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
+
+    private String formatPublishedDate(JsonObject release) {
+        try {
+            JsonElement el = release.get("published_at");
+            if (el == null || el.isJsonNull()) return null;
+            return DISPLAY_DATE.format(Instant.parse(el.getAsString()).atZone(java.time.ZoneId.systemDefault()));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private List<JsonObject> fetchRecentReleases() throws Exception {
+        HttpRequest request = buildRequest("https://api.github.com/repos/" + repo + "/releases?per_page=50");
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 200) {
             LOGGER.warning("[PluginNewsAnnouncer] Impossible de contacter l'API GitHub pour " + repo
                     + " (HTTP " + response.statusCode() + ")");
-            return null;
+            return List.of();
         }
 
+        List<JsonObject> result = new ArrayList<>();
         JsonArray releases = JsonParser.parseString(response.body()).getAsJsonArray();
         for (JsonElement el : releases) {
-            JsonObject release = el.getAsJsonObject();
-            String tagName = release.get("tag_name").getAsString();
-            if (tagName.contains(newVersion)) {
-                JsonElement body = release.get("body");
-                return (body != null && !body.isJsonNull()) ? body.getAsString() : null;
-            }
+            result.add(el.getAsJsonObject());
         }
-        return null; // aucune release ne correspond, tant pis, on annoncera sans détail
+        return result;
     }
 
     private HttpRequest buildRequest(String url) {
