@@ -67,9 +67,9 @@ Ce pack contourne donc ce bug avec `plugin-news-proxy` : un canal moderne namesp
 
 Télécharge les `.jar` depuis la [page des releases](https://github.com/herocraftlol/Plugin-Update-Announcer/releases) :
 
-- `plugin-news-announcer-v1.1.0.jar`
-- `plugin-news-lobby-v1.1.0.jar`
-- `plugin-news-proxy-v1.1.0.jar`
+- `plugin-news-announcer-v1.2.0.jar`
+- `plugin-news-lobby-v1.2.0.jar`
+- `plugin-news-proxy-v1.2.0.jar`
 
 ### 2. Déployer
 
@@ -207,9 +207,45 @@ Les fichiers `.jar` sont générés dans `target/` de chaque module.
 
 ---
 
+## 🆕 Nouveautés de la version
+
+### v1.2.0
+
+- 📦 **Fichiers `.jar` compilés et publiés** pour les trois modules
+  (`plugin-news-announcer`, `plugin-news-lobby`, `plugin-news-proxy`) directement dans la
+  [release v1.2.0](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/tag/v1.2.0),
+  prêts à déposer dans les dossiers `plugins/` — plus besoin de compiler soi-même.
+- ⚙️ **Configurations pré-remplies et documentées** : les `config.yml` embarqués dans les
+  jars (et fournis en exemple à la racine) contiennent désormais les bons identifiants du
+  réseau HeroCraft (serveur web, clé API, organisation GitHub) et des commentaires pas à pas
+  pour chaque serveur (Survie, Lobby…).
+- 🐛 **Jars plus légers** : `paper-api` est désormais en scope `provided`, les `.jar` finaux
+  passent de ~35 Mo à ~350 ko (l'API n'est plus embarquée inutilement).
+- 📖 **README principal et notes de version enrichis** : description agréable à lire,
+  explication détaillée du rôle de chaque module, dépannage et installation claire.
+
+### v1.1.0
+
+- 🌉 **Nouveau module `plugin-news-proxy`** (plugin Velocity) qui contourne le bug connu
+  [#1312](https://github.com/PaperMC/Velocity/issues/1312) de Velocity et relaie fiablement
+  les messages `pluginnews:feed` entre sous-serveurs. Sans lui, les nouveautés partaient
+  des sous-serveurs mais n'arrivaient jamais au lobby — silencieusement.
+- 🔁 **Détection en continu** : scan des jars + vérification des releases GitHub rejoué
+  automatiquement toutes les `scan-interval-minutes` (15 min par défaut), sans attendre un
+  redémarrage.
+
+### v1.0.x
+
+- 🔍 Détection automatique des plugins ajoutés / mis à jour / retirés au démarrage.
+- 🤖 Résolution GitHub intelligente par ressemblance de nom (aucune liste à maintenir).
+- 📢 Annonces simultanées Discord (webhook), site web (API JSON) et lobby (livre + ping).
+- 📖 Livre personnalisé par joueur, groupé par sous-serveur puis par plugin.
+
+---
+
 ## 📦 Téléchargement
 
-👉 [**Dernière version (v1.1.0)**](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/latest)
+👉 [**Dernière version (v1.2.0)**](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/latest)
 
 ---
 

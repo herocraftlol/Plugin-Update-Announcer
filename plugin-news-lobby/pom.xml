@@ -3,7 +3,7 @@
 
     <groupId>com.example</groupId>
     <artifactId>plugin-news-lobby</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -24,7 +24,7 @@
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
             <version>1.21-R0.1-20240810.100446-132</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
