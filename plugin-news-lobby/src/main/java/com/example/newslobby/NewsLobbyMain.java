@@ -86,6 +86,8 @@ public class NewsLobbyMain extends JavaPlugin implements Listener, PluginMessage
             }
 
             feedStore.append(entries);
+            getLogger().info("[PluginNewsLobby] " + entries.size() + " nouveauté(s) reçue(s) et enregistrée(s) pour \""
+                    + world + "\".");
             pingOnlinePlayers(world);
 
         } catch (Exception e) {

@@ -75,9 +75,9 @@ Ce pack contourne donc ce bug avec `plugin-news-proxy` : un canal moderne namesp
 
 Télécharge les `.jar` depuis la [page des releases](https://github.com/herocraftlol/Plugin-Update-Announcer/releases) :
 
-- `plugin-news-announcer-v1.4.0.jar`
-- `plugin-news-lobby-v1.4.0.jar`
-- `plugin-news-proxy-v1.4.0.jar`
+- `plugin-news-announcer-v1.5.0.jar`
+- `plugin-news-lobby-v1.5.0.jar`
+- `plugin-news-proxy-v1.5.0.jar`
 
 ### 2. Déployer
 
@@ -217,6 +217,25 @@ Les fichiers `.jar` sont générés dans `target/` de chaque module.
 
 ## 🆕 Nouveautés de la version
 
+### v1.5.0
+
+- 🔎 **Journaux de diagnostic du proxy Velocity** (`plugin-news-proxy`) : le relai
+  `pluginnews:feed` entre sous-serveurs est la pièce la plus délicate du réseau, et jusque-là
+  il échouait **silencieusement**. Désormais chaque étape est tracée dans les logs du proxy :
+  - réception du message (avec le type de source),
+  - rejet explicite si la source n'est pas un serveur backend,
+  - relai indique le serveur source, le serveur cible et la taille du payload,
+  - en cas de serveur cible introuvable, la liste des serveurs connus est affichée
+    (pratique pour repérer un `lobby.target-server` mal orthographié),
+  - le résultat de `sendPluginMessage` est consigné (`envoyé` / `ÉCHEC` quand aucun joueur
+    n'est connecté sur le serveur cible).
+- 📋 **Journal de réception côté lobby** (`plugin-news-lobby`) : à chaque lot de nouveautés
+  reçu, le lobby logge désormais le nombre d'entrées enregistrées et le sous-serveur
+  émetteur — pour confirmer en un coup d'œil que le flux arrive bien.
+- 📦 **Fichiers `.jar` compilés et publiés** pour les trois modules dans la
+  [release v1.5.0](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/tag/v1.5.0),
+  plus une archive du code source (`plugin-news-announcer-1.5.0-herocraftlol-src.zip`).
+
 ### v1.4.0
 
 - 🆕 **Détection des « releases récentes » GitHub** : jusqu'ici, un plugin n'était signalé
@@ -307,7 +326,7 @@ Les fichiers `.jar` sont générés dans `target/` de chaque module.
 
 ## 📦 Téléchargement
 
-👉 [**Dernière version (v1.4.0)**](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/latest)
+👉 [**Dernière version (v1.5.0)**](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/latest)
 
 ---
 
