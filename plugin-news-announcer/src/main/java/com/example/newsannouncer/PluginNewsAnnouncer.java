@@ -21,6 +21,7 @@ import java.util.Map;
 public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
 
     private GithubRepoResolver repoResolver;
+    private RecentReleaseStore recentReleaseStore;
     private List<PluginUpdate> pendingLobbyUpdates;
     private String pendingLobbyWorldName;
     private LobbyAnnouncer lobbyAnnouncer;
@@ -42,6 +43,7 @@ public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
         if (!username.isBlank()) {
             repoResolver = new GithubRepoResolver(username, getConfig().getString("github.token", ""));
         }
+        recentReleaseStore = new RecentReleaseStore(getDataFolder());
 
         // Premier scan immédiat au démarrage
         getServer().getScheduler().runTaskAsynchronously(this, this::runDetectionCycle);
@@ -75,28 +77,89 @@ public class PluginNewsAnnouncer extends JavaPlugin implements Listener {
             Map<String, String> previous = store.load();
 
             UpdateDetector detector = new UpdateDetector();
-            List<PluginUpdate> updates = detector.diff(previous, current);
-
-            if (updates.isEmpty()) {
-                getLogger().info("[PluginNewsAnnouncer] Aucun changement de plugin détecté.");
-                store.save(current);
-                return;
-            }
+            List<PluginUpdate> updates = new java.util.ArrayList<>(detector.diff(previous, current));
 
             for (PluginUpdate update : updates) {
-                if (update.type == PluginUpdate.Type.UPDATED) {
+                if (update.type == PluginUpdate.Type.UPDATED || update.type == PluginUpdate.Type.ADDED) {
                     update.changelog = fetchChangelogSafely(update);
                 }
             }
 
-            announceAll(updates);
+            // Vérifie aussi les plugins déjà installés dont la version locale n'a pas changé :
+            // leur release GitHub correspondante a peut-être été publiée récemment.
+            if (getConfig().getBoolean("github.recent-release-check.enabled", true)) {
+                java.util.Set<String> alreadyHandled = new java.util.HashSet<>();
+                for (PluginUpdate u : updates) alreadyHandled.add(u.pluginName);
+                updates.addAll(checkRecentReleasesForUnchangedPlugins(current, alreadyHandled));
+            }
+
             store.save(current);
+
+            if (updates.isEmpty()) {
+                getLogger().info("[PluginNewsAnnouncer] Aucun changement de plugin détecté.");
+                return;
+            }
+
+            announceAll(updates);
 
         } catch (Exception e) {
             getLogger().warning("[PluginNewsAnnouncer] Erreur pendant le cycle de détection : " + e.getMessage());
         } finally {
             scanInProgress.set(false);
         }
+    }
+
+    /**
+     * Pour les plugins déjà installés dont la version LOCALE n'a pas changé entre deux
+     * scans (donc invisibles pour UpdateDetector), vérifie si la release GitHub
+     * correspondant à leur version actuelle a été publiée récemment. Utile quand un plugin
+     * est déployé une seule fois avec une version qui, elle, est neuve sur GitHub : sans
+     * cette vérification, cette nouveauté ne serait jamais détectée (aucun changement local
+     * ne se produira jamais tant que le jar n'est pas remplacé).
+     *
+     * Chaque version n'est signalée qu'UNE SEULE FOIS par plugin, grâce à RecentReleaseStore
+     * (sinon ce serait ré-annoncé à chaque cycle de scan tant qu'on reste dans la fenêtre).
+     */
+    private List<PluginUpdate> checkRecentReleasesForUnchangedPlugins(Map<String, String> current, java.util.Set<String> alreadyHandled) {
+        List<PluginUpdate> result = new java.util.ArrayList<>();
+        if (repoResolver == null) return result;
+        if (!getConfig().getBoolean("github.recent-release-check.enabled", true)) return result;
+
+        int windowDays = getConfig().getInt("github.recent-release-check.window-days", 7);
+        String tagPrefix = getConfig().getString("github.default-tag-prefix", "v");
+        String token = getConfig().getString("github.token", "");
+        long cutoff = System.currentTimeMillis() - windowDays * 24L * 60L * 60L * 1000L;
+
+        for (var entry : current.entrySet()) {
+            String pluginName = entry.getKey();
+            String version = entry.getValue();
+            if (alreadyHandled.contains(pluginName)) continue;
+            if (recentReleaseStore.alreadyAnnounced(pluginName, version)) continue;
+
+            try {
+                String repo = repoResolver.resolveRepo(pluginName);
+                if (repo == null) continue;
+
+                GithubChangelogFetcher fetcher = new GithubChangelogFetcher(repo, tagPrefix, token, windowDays);
+                Long publishedAt = fetcher.getPublishedAtForVersion(version);
+                if (publishedAt == null) {
+                    fetcher = new GithubChangelogFetcher(repo, "", token, windowDays);
+                    publishedAt = fetcher.getPublishedAtForVersion(version);
+                }
+                if (publishedAt == null) continue;
+                if (publishedAt < cutoff) continue;
+
+                PluginUpdate synthetic = new PluginUpdate(pluginName, PluginUpdate.Type.RECENT, null, version);
+                synthetic.changelog = fetcher.fetch(pluginName, null, version);
+                result.add(synthetic);
+
+                recentReleaseStore.markAnnounced(pluginName, version);
+            } catch (Exception e) {
+                getLogger().warning("[PluginNewsAnnouncer] Erreur vérification release récente pour "
+                        + pluginName + " : " + e.getMessage());
+            }
+        }
+        return result;
     }
 
     /**

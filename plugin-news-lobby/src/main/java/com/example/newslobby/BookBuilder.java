@@ -68,6 +68,7 @@ public class BookBuilder {
         return switch (e.type) {
             case "ADDED" -> "§a+ " + e.plugin + " §7(" + date + ")";
             case "REMOVED" -> "§c- " + e.plugin + " §7(" + date + ")";
+            case "RECENT" -> "§d★ " + e.plugin + " §7v" + e.newVersion + " (" + date + ")";
             default -> "§e" + e.plugin + " §7" + e.oldVersion + "→" + e.newVersion + " (" + date + ")";
         };
     }

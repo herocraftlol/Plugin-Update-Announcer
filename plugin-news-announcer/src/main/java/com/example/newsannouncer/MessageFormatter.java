@@ -15,6 +15,8 @@ public class MessageFormatter {
                 case REMOVED -> sb.append("🔴 **Retiré** : ").append(u.pluginName).append("\n");
                 case UPDATED -> sb.append("🔄 **").append(u.pluginName).append("** ")
                         .append(u.oldVersion).append(" → ").append(u.newVersion).append("\n");
+                case RECENT -> sb.append("✨ **").append(u.pluginName).append("** v")
+                        .append(u.newVersion).append(" (release GitHub récente)\n");
             }
             if (u.changelog != null && !u.changelog.isBlank()) {
                 sb.append("> ").append(indentQuote(u.changelog)).append("\n");
@@ -35,6 +37,7 @@ public class MessageFormatter {
                 case ADDED -> sb.append(u.pluginName).append(" §a(ajouté)");
                 case REMOVED -> sb.append(u.pluginName).append(" §c(retiré)");
                 case UPDATED -> sb.append(u.pluginName).append(" §e→ ").append(u.newVersion);
+                case RECENT -> sb.append(u.pluginName).append(" §d(release récente)");
             }
         }
         return sb.toString();

@@ -73,6 +73,13 @@ github:
   username: "herocraftlol"   # https://github.com/herocraftlol — déjà préconfiguré
   token: "ghp_xxxx"          # recommandé, augmente la limite de requêtes API (60 -> 5000/h)
   default-tag-prefix: "v"
+  changelog-window-days: 7   # agrège toutes les releases GitHub publiées depuis l'ancienne
+                              # version installée, bornées à cette fenêtre (en jours)
+  recent-release-check:
+    enabled: true
+    window-days: 7           # signale aussi un plugin déjà installé si SA version actuelle
+                              # correspond à une release GitHub publiée il y a moins de N jours
+                              # (même sans changement de version local détecté)
 
 # Relance le cycle de détection (scan des jars + vérification des dernières releases
 # GitHub) toutes les N minutes, sans attendre un redémarrage du serveur. 0 = désactivé.
