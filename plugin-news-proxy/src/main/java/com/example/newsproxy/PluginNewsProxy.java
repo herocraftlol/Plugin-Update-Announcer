@@ -36,7 +36,7 @@ import java.util.Optional;
 @Plugin(
         id = "plugin-news-proxy",
         name = "PluginNewsProxy",
-        version = "1.4.0",
+        version = "1.5.0",
         description = "Relaie pluginnews:feed entre sous-serveurs (contournement du bug Velocity #1312)"
 )
 public class PluginNewsProxy {
@@ -63,9 +63,15 @@ public class PluginNewsProxy {
         if (!event.getIdentifier().equals(CHANNEL)) {
             return;
         }
+
+        logger.info("[PluginNewsProxy] Message reçu sur pluginnews:feed, source="
+                + event.getSource().getClass().getSimpleName());
+
         // On ne relaie que ce qui vient d'un serveur backend (pas d'un client), et on
         // empêche Velocity d'essayer de le retransmettre lui-même par un autre chemin.
-        if (!(event.getSource() instanceof ServerConnection)) {
+        if (!(event.getSource() instanceof ServerConnection sourceConn)) {
+            logger.warn("[PluginNewsProxy] Message ignoré : la source n'est pas un serveur backend ("
+                    + event.getSource().getClass().getSimpleName() + ").");
             return;
         }
         event.setResult(PluginMessageEvent.ForwardResult.handled());
@@ -80,14 +86,20 @@ public class PluginNewsProxy {
             in.transferTo(payloadOut);
             byte[] payload = payloadOut.toByteArray();
 
+            logger.info("[PluginNewsProxy] Relai depuis \"" + sourceConn.getServerInfo().getName()
+                    + "\" vers \"" + targetServerName + "\" (" + payload.length + " octets de payload).");
+
             Optional<RegisteredServer> target = server.getServer(targetServerName);
             if (target.isEmpty()) {
                 logger.warn("[PluginNewsProxy] Serveur cible \"" + targetServerName
-                        + "\" introuvable dans la config Velocity, message ignoré.");
+                        + "\" introuvable dans la config Velocity, message ignoré. Serveurs connus : "
+                        + server.getAllServers().stream().map(s -> s.getServerInfo().getName()).toList());
                 return;
             }
 
-            target.get().sendPluginMessage(CHANNEL, payload);
+            boolean sent = target.get().sendPluginMessage(CHANNEL, payload);
+            logger.info("[PluginNewsProxy] sendPluginMessage vers \"" + targetServerName
+                    + "\" -> " + (sent ? "envoyé" : "ÉCHEC (aucun joueur connecté sur ce serveur ?)"));
         } catch (Exception e) {
             logger.warn("[PluginNewsProxy] Erreur de relai du message pluginnews:feed : " + e.getMessage());
         }
