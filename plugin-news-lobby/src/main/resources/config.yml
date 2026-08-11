@@ -1,19 +1,14 @@
-# Titre affiché en haut du livre
+# ============================================================
+# plugins/PluginNewsLobby/config.yml
+# À installer UNIQUEMENT sur le serveur lobby, EN PLUS de
+# PluginNewsAnnouncer (voir config-PluginNewsAnnouncer-lobby.yml).
+# ============================================================
+
 book-title: "Nouveautés du serveur"
-
-# Auteur affiché sur le livre (ex: nom de ton réseau)
 book-author: "HeroCraft"
-
-# Durée pendant laquelle un fichier de nouveauté reste dans l'historique agrégé (purge auto)
 retention-days: 60
-
-# À la toute première connexion d'un joueur (jamais vu auparavant), on ne montre que
-# les nouveautés des N derniers jours, pas tout l'historique.
 first-join-window-days: 7
-
-# Fenêtre de nouveautés montrée par la commande /nouveautes (relecture à la demande)
 review-window-days: 30
 
-# Message court dans le chat dès qu'une mise à jour arrive, pour les joueurs déjà connectés
 chat-ping:
   enabled: true

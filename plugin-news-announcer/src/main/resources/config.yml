@@ -1,66 +1,40 @@
-# ============================================
-# Plugin News Announcer - Configuration
-# ============================================
+# ============================================================
+# plugins/PluginNewsAnnouncer/config.yml
+# À installer sur CHAQUE serveur Paper que tu veux suivre (survie, skyblock,
+# mini-jeux, lobby...). Copie ce fichier tel quel, puis change juste
+# "server-name" pour qu'il corresponde à CE serveur précis avant de le
+# déposer dans son dossier plugins/.
+# ============================================================
 
-# Nom affiché de ce serveur dans les annonces (ex: "Survie", "Skyblock", "Lobby")
+# Nom affiché dans les annonces (Discord, site web, livre au lobby).
+# Change cette ligne à chaque nouveau serveur : "Survie", "Skyblock",
+# "HikaBrain", "BedWars", "Lobby"...
 server-name: "Survie"
 
-# ---- Destinations ----
 discord:
   enabled: true
-  webhook-url: "https://discord.com/api/webhooks/XXXX/YYYY"
+  webhook-url: "https://discord.com/api/webhooks/METS_TON_WEBHOOK_ICI"
 
 lobby:
   enabled: true
-  # Nom du serveur BungeeCord "lobby" (doit correspondre au config.yml de Bungee).
-  # Le plugin PluginNewsLobby installé SUR ce serveur reçoit les données et gère
-  # le livre + le ping de chat + le suivi par joueur. Rien d'autre à configurer ici.
+  # Nom EXACT du serveur "lobby" tel que déclaré dans la section [servers]
+  # de velocity.toml. D'après tes logs Velocity actuels, c'est bien "lobby".
   target-server: "lobby"
 
 website:
   enabled: true
-  api-url: "https://tonsite.com/api/plugin-news"
-  # Si ton API nécessite une clé (recommandé)
-  api-key: "change-moi"
+  api-url: "https://herocraft.servegame.com/api/plugin-news"
+  # Doit être EXACTEMENT la même valeur que PLUGIN_NEWS_API_KEY dans le
+  # .env du site (voir mc-site-avec-news-announcer.zip).
+  api-key: "f91ec210619aebfe8a609c2240b1744eb947b5b6ad0fef56c843450989bcd749"
 
-# ---- GitHub ----
-# Renseigne juste ton pseudo/organisation : le plugin liste TOUS les repos publics de
-# https://github.com/herocraftlol et les associe automatiquement aux plugins installés
-# en comparant les noms. Plus besoin de rien ajouter manuellement quand tu crées un
-# nouveau repo dans l'organisation.
 github:
   username: "herocraftlol"
-  token: ""   # recommandé : Personal Access Token (scope "public_repo"), passe de 60 à 5000 req/h
-  # Format des tags utilisé par la majorité de tes repos ("v1.2.3" -> "v", "1.2.3" -> "")
-  # Sert de valeur par défaut ; le fetcher retente aussi en fuzzy-match si ça ne correspond pas.
+  token: ""   # recommandé : Personal Access Token GitHub (scope "public_repo"), passe de 60 à 5000 req/h
   default-tag-prefix: "v"
 
-# ---- Vérification en temps réel ----
-# En plus du scan fait au démarrage du serveur, le plugin relance périodiquement le
-# même cycle de détection (scan des jars + vérification des dernières releases GitHub)
-# sans nécessiter de redémarrage. Utile si tu déploies un nouveau .jar à chaud, ou si
-# une release est publiée sur https://github.com/herocraftlol pendant que le serveur tourne.
-# Mets 0 pour désactiver et ne scanner qu'au démarrage.
 scan-interval-minutes: 15
 
-# ---- Overrides manuels (optionnel) ----
-# Utile seulement si :
-#  - le nom du repo GitHub ne ressemble pas du tout au nom du plugin (matching auto impossible)
-#  - le plugin vient de Spigot plutôt que GitHub
-#  - le plugin est un jar maison avec un CHANGELOG.md local
-# Si un plugin n'apparaît pas ici, la détection automatique par nom est utilisée.
-plugins:
-  EconomyPlus:
-    source: spigot
-    resource-id: 12345
-
-  MonPluginMaison:
-    source: manual
-    changelog-file: "plugins/MonPluginMaison/CHANGELOG.md"
-
-  # Exemple d'override si le repo ne matche pas le nom du plugin :
-  # NomDuPlugin:
-  #   source: github
-  #   repo: "TonPseudoGithub/nom-de-repo-different"
-  #   tag-prefix: ""
-
+# Overrides manuels (uniquement si un plugin ne correspond à aucun repo par
+# ressemblance de nom, ou vient de Spigot / est un jar maison) :
+plugins: {}
