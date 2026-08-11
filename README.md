@@ -24,6 +24,11 @@ plateformes externes — **sans aucune configuration manuelle par plugin**.
   encore découvertes, groupées par sous-serveur puis par plugin.
 - 🌉 **Plugin proxy Velocity dédié** qui contourne le [bug connu #1312](https://github.com/PaperMC/Velocity/issues/1312)
   de Velocity sur le canal legacy BungeeCord/Forward.
+- 🌐 **API HTTP embarquée** (nouveauté v1.3.0) : le lobby expose directement son journal de
+  nouveautés (`/news/recent`, `/news/date`) pour que ton site web l'affiche sans interroger
+  chaque sous-serveur.
+- 🎛️ **Affichage auto contrôlable par joueur** (nouveauté v1.3.0) : `/nouveautes auto on|off`
+  et consultation par date avec `/nouveautes date jj/mm/aaaa`.
 
 ---
 
@@ -67,9 +72,9 @@ Ce pack contourne donc ce bug avec `plugin-news-proxy` : un canal moderne namesp
 
 Télécharge les `.jar` depuis la [page des releases](https://github.com/herocraftlol/Plugin-Update-Announcer/releases) :
 
-- `plugin-news-announcer-v1.2.0.jar`
-- `plugin-news-lobby-v1.2.0.jar`
-- `plugin-news-proxy-v1.2.0.jar`
+- `plugin-news-announcer-v1.3.0.jar`
+- `plugin-news-lobby-v1.3.0.jar`
+- `plugin-news-proxy-v1.3.0.jar`
 
 ### 2. Déployer
 
@@ -209,6 +214,28 @@ Les fichiers `.jar` sont générés dans `target/` de chaque module.
 
 ## 🆕 Nouveautés de la version
 
+### v1.3.0
+
+- 🌐 **API HTTP embarquée dans le lobby** (`NewsHttpApi`) : un petit serveur HTTP (basé sur le
+  JDK, zéro dépendance tierce) expose le journal de nouveautés pour ton site web, sans avoir
+  à interroger chaque sous-serveur :
+  - `GET /news/recent?days=7&limit=7` — les dernières nouveautés (fenêtre + nombre réglables)
+  - `GET /news/date?date=AAAA-MM-JJ` — le journal d'un jour précis
+  - Authentification optionnelle par en-tête `X-API-Key`.
+- 🎛️ **Contrôle joueur de l'affichage automatique** : `/nouveautes auto on|off` laisse chaque
+  joueur activer/désactiver l'ouverture auto du livre à la connexion (la commande manuelle
+  reste toujours disponible).
+- 📅 **Consultation par date** : `/nouveautes date jj/mm/aaaa` rouvre le journal d'un jour
+  précis sous forme de livre.
+- 🕓 **Anti-spam de l'ouverture auto** : `auto-open.min-interval-hours` évite de rouvrir le
+  livre à chaque reconnexion rapprochée d'un joueur sans rien de neuf.
+- 📐 **Fenêtre minimale garantie** (`default-window-days`) : à chaque connexion, on montre au
+  moins les nouveautés des N derniers jours, même si le joueur s'est connecté récemment.
+- 📦 **Fichiers `.jar` compilés et publiés** pour les trois modules directement dans la
+  [release v1.3.0](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/tag/v1.3.0).
+- 🐛 **Jars plus légers** : `paper-api` en scope `provided` (~350 ko au lieu de ~35 Mo) ;
+  `velocity-plugin.json` préservé (version + auteur + description détaillée).
+
 ### v1.2.0
 
 - 📦 **Fichiers `.jar` compilés et publiés** pour les trois modules
@@ -245,7 +272,7 @@ Les fichiers `.jar` sont générés dans `target/` de chaque module.
 
 ## 📦 Téléchargement
 
-👉 [**Dernière version (v1.2.0)**](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/latest)
+👉 [**Dernière version (v1.3.0)**](https://github.com/herocraftlol/Plugin-Update-Announcer/releases/latest)
 
 ---
 

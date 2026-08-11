@@ -7,5 +7,6 @@ description: Affiche les nouveautés agrégées de tous les mondes au lobby (liv
 
 commands:
   nouveautes:
-    description: Réafficher les nouveautés récentes du serveur
+    description: Réafficher les nouveautés récentes, gérer l'affichage auto, ou consulter le journal par date
+    usage: "/<command> [auto on|off] [date jj/mm/aaaa]"
     aliases: [news, pluginnews]

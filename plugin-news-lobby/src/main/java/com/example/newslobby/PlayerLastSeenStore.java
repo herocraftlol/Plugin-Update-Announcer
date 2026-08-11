@@ -8,9 +8,9 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
- * Retient, pour chaque joueur, le timestamp de la dernière nouveauté qu'il a déjà vue.
- * Permet de ne montrer le livre automatiquement que si du contenu est réellement nouveau
- * pour lui.
+ * Retient, pour chaque joueur : le timestamp de la dernière nouveauté qu'il a déjà vue,
+ * sa préférence d'affichage automatique du livre, et le dernier moment où le livre lui a
+ * été ouvert automatiquement (pour éviter de le rouvrir à chaque reconnexion rapprochée).
  */
 public class PlayerLastSeenStore {
 
@@ -25,15 +25,40 @@ public class PlayerLastSeenStore {
     }
 
     /**
-     * @return le dernier timestamp vu, ou -1 si le joueur ne s'est jamais connecté avant
-     *         (première connexion : on lui montrera uniquement les nouveautés < 7 jours).
+     * @return le dernier timestamp vu, ou -1 si le joueur ne s'est jamais connecté avant.
      */
     public long getLastSeen(UUID playerId) {
-        return yaml.getLong("players." + playerId, -1L);
+        // Compatibilité avec l'ancien format (v1.0.x) où la valeur était stockée directement
+        // sous "players.<uuid>" (un long) plutôt que sous "players.<uuid>.lastSeen".
+        Object legacy = yaml.get("players." + playerId);
+        if (legacy instanceof Number n) {
+            return n.longValue();
+        }
+        return yaml.getLong("players." + playerId + ".lastSeen", -1L);
     }
 
     public void setLastSeen(UUID playerId, long timestamp) {
-        yaml.set("players." + playerId, timestamp);
+        yaml.set("players." + playerId + ".lastSeen", timestamp);
+        save();
+    }
+
+    /** @return true si le joueur veut voir le livre s'ouvrir automatiquement à la connexion. */
+    public boolean isAutoOpenEnabled(UUID playerId, boolean defaultValue) {
+        return yaml.getBoolean("players." + playerId + ".autoOpen", defaultValue);
+    }
+
+    public void setAutoOpenEnabled(UUID playerId, boolean enabled) {
+        yaml.set("players." + playerId + ".autoOpen", enabled);
+        save();
+    }
+
+    /** @return le timestamp de la dernière ouverture automatique, ou -1 si jamais. */
+    public long getLastAutoOpen(UUID playerId) {
+        return yaml.getLong("players." + playerId + ".lastAutoOpen", -1L);
+    }
+
+    public void setLastAutoOpen(UUID playerId, long timestamp) {
+        yaml.set("players." + playerId + ".lastAutoOpen", timestamp);
         save();
     }
 
